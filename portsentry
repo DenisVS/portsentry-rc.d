@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# PROVIDE: portsentry
+# REQUIRE: NETWORKING ipfw
+
+. /etc/rc.subr
+name="portsentry"
+rcvar=portsentry_enable
+command="/usr/local/bin/${name}"
+start_precmd="${name}_prestart"
+start_cmd="${name}_start $1"
+pidfile_udp="/var/run/${name}_udp.pid"
+pidfile_tcp="/var/run/${name}_tcp.pid"
+
+portsentry_prestart()
+{
+    if [ `cat ${pidfile_udp}` = "`ps -auxww | grep portsentry | grep udp | awk '{print $2}'`" ];	then
+	echo ${name} is running! Try stop or restart.
+        exit 1
+    fi
+    if [ `cat ${pidfile_tcp}` = "`ps -auxww | grep portsentry | grep tcp | awk '{print $2}'`" ];	then
+	echo ${name} instance is running! Try stop or restart.
+        exit 1
+    fi
+    rc_flag_tcp="-tcp"
+    rc_flag_udp="-udp"    
+}
+
+portsentry_start()
+{
+    echo "Starting portsentry."
+    ${command} ${rc_flag_tcp}
+    ${command} ${rc_flag_udp}
+    ps -auxww | grep portsentry | grep udp | awk '{print $2}' > ${pidfile_udp}
+    ps -auxww | grep portsentry | grep tcp | awk '{print $2}' > ${pidfile_tcp}
+}
+
+load_rc_config ${name}
+run_rc_command "$1"
+exit 1                    
+
+
+
+
+
